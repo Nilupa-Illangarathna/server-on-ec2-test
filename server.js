@@ -104,10 +104,9 @@ const checkDomainAccess = async (req, res, next) => {
 
 
 
-// // Serve the plugin from the external CDN, protecting it with API Key & Domain Check
-// app.get('/accessibility-plugin', authenticateAPIKey, checkDomainAccess, (req, res) => {
-//     res.redirect("https://roaring-gingersnap-106db5.netlify.app/accessibility-plugin.min.js");
-// });
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', message: 'Server is running smoothly.' });
+});
 
 
 // Serve the plugin with CORS headers before redirecting
