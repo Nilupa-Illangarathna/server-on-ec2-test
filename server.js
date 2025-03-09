@@ -22,13 +22,18 @@ app.use(cors({
 // Middleware to allow CORS for plugin requests
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type, x-api-key");
+    
+    // ✅ Expose the x-api-key header so the browser can access it
+    res.header("Access-Control-Expose-Headers", "x-api-key");
+
     if (req.method === "OPTIONS") {
         return res.sendStatus(200);
     }
     next();
 });
+
 
 // Database Setup
 const dbPath = path.join(__dirname, "domains.db");
@@ -62,7 +67,10 @@ app.post('/validate-domain', async (req, res) => {
 
         // Check domain in the database
         const domainExists = await new Promise((resolve, reject) => {
-            db.get("SELECT name FROM domains WHERE name = ?", [domain], (err, row) => {
+
+            const normalizedDomain = domain.replace(/^https?:\/\//, '');
+
+            db.get("SELECT name FROM domains WHERE name = ?", [normalizedDomain], (err, row) => {
                 if (err) reject(err);
                 resolve(row);
             });
