@@ -22,7 +22,7 @@ app.use(cors({
 // Middleware to allow CORS for plugin requests
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type, x-api-key");
     if (req.method === "OPTIONS") {
         return res.sendStatus(200);
@@ -51,23 +51,14 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
-// New Endpoint to Validate Domain and API Key
-app.get('/validate-domain', async (req, res) => {
+// New Endpoint to Validate Domain (No API Key Validation)
+app.post('/validate-domain', async (req, res) => {
     try {
-        const providedKey = req.headers['x-api-key'];
-        if (!providedKey || providedKey !== API_KEY) {
-            console.log("Invalid API Key");
-            return res.status(403).json({ success: false, message: "Invalid API Key" });
+        const { domain } = req.body;
+        if (!domain) {
+            console.log("Missing domain");
+            return res.status(400).json({ success: false, message: "Domain is required" });
         }
-
-        const requestOrigin = req.get('origin') || req.get('referer');
-        if (!requestOrigin) {
-            console.log("Request has no origin or referer.");
-            return res.status(403).json({ success: false, message: "Missing origin or referer" });
-        }
-
-        const url = new URL(requestOrigin);
-        const domain = url.hostname;
 
         // Check domain in the database
         const domainExists = await new Promise((resolve, reject) => {
@@ -77,20 +68,21 @@ app.get('/validate-domain', async (req, res) => {
             });
         });
 
+        // Send API key in headers even if the domain does not exist
+        res.set("x-api-key", API_KEY);
+
         if (!domainExists) {
-            console.log(`Unauthorized access attempt from: ${domain}`);
+            console.log(`Domain not allowed: ${domain}`);
             return res.status(403).json({
                 success: false,
-                message: "Domain not allowed",
-                apiKey: API_KEY
+                message: "Domain not allowed"
             });
         }
 
-        console.log(`Authorized access for domain: ${domain}`);
+        console.log(`Domain allowed: ${domain}`);
         return res.status(200).json({
             success: true,
-            message: "Domain is allowed",
-            apiKey: API_KEY
+            message: "Domain is allowed"
         });
     } catch (error) {
         console.error("Error in /validate-domain:", error.message);
@@ -101,6 +93,7 @@ app.get('/validate-domain', async (req, res) => {
     }
 });
 
+// Health Check Endpoint
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Server is running smoothly.' });
 });
