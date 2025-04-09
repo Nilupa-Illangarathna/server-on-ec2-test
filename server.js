@@ -4,10 +4,6 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const fs = require('fs');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const slowDown = require('express-slow-down');
-
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,10 +11,7 @@ const API_KEY = process.env.PLUGIN_CLIENT_KEY;
 
 console.log("PLUGIN_CLIENT_KEY: ", API_KEY);
 
-
-
 // Middleware
-app.use(helmet());
 app.use(express.json());
 app.use(cors({
     origin: "*",  
@@ -26,32 +19,13 @@ app.use(cors({
     allowedHeaders: "Content-Type, x-api-key"
 }));
 
-// Rate Limiter: 300 requests per minute per IP
-const limiter = rateLimit({
-    windowMs: 60 * 1000, 
-    max: 300,                 
-    message: "Too many requests from this IP, please try again later.",
-    standardHeaders: true,    
-    legacyHeaders: false,
-});
-app.use(limiter);
-
-// Slow Down: start adding delay after 150 requests
-const speedLimiter = slowDown({
-    windowMs: 60 * 1000,    
-    delayAfter: 150,        
-    delayMs: 200,           
-});
-app.use(speedLimiter);
-
-
 // Middleware to allow CORS for plugin requests
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type, x-api-key");
     
-    //  Expose the x-api-key header so the browser can access it
+    // ✅ Expose the x-api-key header so the browser can access it
     res.header("Access-Control-Expose-Headers", "x-api-key");
 
     if (req.method === "OPTIONS") {
